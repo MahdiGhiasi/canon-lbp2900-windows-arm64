@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Windows ARM64 adaptation, modified 2026-11-20.
+# Windows ARM64 adaptation, modified 2026-11-22.
 
 function Get-CanonLocations {
     $base = [IO.Path]::GetFullPath([Environment]::GetFolderPath('LocalApplicationData'))
@@ -71,20 +71,39 @@ function Remove-CanonQueue($uuid) {
     }
 }
 
+function Test-CanonScriptArgument($arguments, $expectedPaths) {
+    if (!$arguments) { return $false }
+    $match = [regex]::Match($arguments, '(?:^|\s)(?:"(?<path>[^"]+)"|(?<path>[^\s"]+))\s*$')
+    if (!$match.Success) { return $false }
+    $path = $match.Groups['path'].Value
+    if (![IO.Path]::IsPathRooted($path)) { return $false }
+    try {
+        # Windows can store the same path using an 8.3 name in shortcuts.
+        $full = [IO.Path]::GetFullPath($path)
+        foreach ($expected in $expectedPaths) {
+            if ($full.Equals([IO.Path]::GetFullPath($expected), [StringComparison]::OrdinalIgnoreCase)) {
+                return $true
+            }
+        }
+    } catch { return $false }
+    return $false
+}
+
 function Stop-CanonProcesses($root) {
     $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
     $app = Join-Path $root 'app'
-    $pattern = '(?:^|\s)"?' + [regex]::Escape($app + '\') + '(bridge|status)\.pyw"?\s*$'
+    $scripts = @((Join-Path $app 'bridge.pyw'), (Join-Path $app 'status.pyw'))
     $candidates = Get-CimInstance Win32_Process -Filter "Name='pythonw.exe' OR Name='python.exe'"
     foreach ($info in $candidates) {
-        if ($info.CommandLine -notmatch $pattern) { continue }
+        if (!(Test-CanonScriptArgument $info.CommandLine $scripts)) { continue }
         if ((Invoke-CimMethod -InputObject $info -MethodName GetOwnerSid).Sid -ne $sid) { continue }
         $process = Get-Process -Id $info.ProcessId -ErrorAction SilentlyContinue
         if (!$process) { continue }
         $null = $process.Handle
         # Recheck after opening the handle to avoid a recycled process ID.
         $current = Get-CimInstance Win32_Process -Filter ('ProcessId=' + $process.Id)
-        if (!$current -or $current.CreationDate -ne $info.CreationDate -or $current.CommandLine -notmatch $pattern) { continue }
+        if (!$current -or $current.CreationDate -ne $info.CreationDate -or
+            !(Test-CanonScriptArgument $current.CommandLine $scripts)) { continue }
         if (!$process.HasExited) {
             $process.Kill()
             if (!$process.WaitForExit(5000)) { throw 'A Canon helper process is still running. Run Uninstall.cmd again.' }
@@ -102,7 +121,7 @@ function Remove-CanonShortcut($path, $root, $script) {
     $shell = New-Object -ComObject WScript.Shell
     $shortcut = $shell.CreateShortcut($path)
     $expected = Join-Path (Join-Path $root 'app') $script
-    if ($shortcut.Arguments -notmatch ('(?:^|\s)"?' + [regex]::Escape($expected) + '"?\s*$')) {
+    if (!(Test-CanonScriptArgument $shortcut.Arguments @($expected))) {
         Write-Host 'Kept a same-named shortcut that points to another application.'
         return
     }

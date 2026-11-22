@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Windows ARM64 adaptation, modified 2026-11-20.
+# Windows ARM64 adaptation, modified 2026-11-22.
 """Exercise uninstall using temporary files and mocked Windows printer operations."""
 import os
 from pathlib import Path
@@ -70,6 +70,8 @@ class UninstallTests(unittest.TestCase):
                                     env=env, capture_output=True, text=True, timeout=25)
             if result.returncode == 77:
                 self.skipTest('The environment does not permit creating NTFS junctions.')
+            if result.returncode == 78:
+                self.skipTest('The filesystem does not provide 8.3 path aliases.')
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             return result.stdout
 
@@ -115,6 +117,30 @@ $script:answer='n'
 Invoke-CanonUninstall
 if (!(Test-Path -LiteralPath (Join-Path $root 'jobs\test.held.pdf')) -or
     !(Test-Path -LiteralPath $script:locations.Startup) -or $script:removed -or $script:stopped) { throw 'Canceled uninstall changed the installation' }
+""")
+
+    def test_short_path_shortcuts_are_removed(self):
+        self.check(r"""
+$shortRoot=(New-Object -ComObject Scripting.FileSystemObject).GetFolder($root).ShortPath
+if ($shortRoot -eq [IO.Path]::GetFullPath($root)) { exit 78 }
+foreach($entry in @(@($script:locations.Startup,'bridge.pyw'),@($script:locations.Status,'status.pyw'))) {
+    $link=$shell.CreateShortcut($entry[0])
+    $link.Arguments='-E -s "'+(Join-Path (Join-Path $shortRoot 'app') $entry[1])+'"'
+    $link.Save()
+}
+Invoke-CanonUninstall
+if ((Test-Path -LiteralPath $script:locations.Startup) -or
+    (Test-Path -LiteralPath $script:locations.Status) -or (Test-Path -LiteralPath $root)) { throw 'Short-path cleanup failed' }
+""")
+
+    def test_unrelated_shortcut_is_preserved(self):
+        self.check(r"""
+$link=$shell.CreateShortcut($script:locations.Startup)
+$link.Arguments='"'+(Join-Path $env:TEST_ROOT 'another-app.pyw')+'"'
+$link.Save()
+Invoke-CanonUninstall
+if (!(Test-Path -LiteralPath $script:locations.Startup) -or
+    (Test-Path -LiteralPath $script:locations.Status) -or (Test-Path -LiteralPath $root)) { throw 'Shortcut ownership check failed' }
 """)
 
     def test_queue_failure_keeps_files_and_helper(self):
