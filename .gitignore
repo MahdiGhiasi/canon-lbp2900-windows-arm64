@@ -1,0 +1,44 @@
+# Local runtime data and documents
+jobs/
+status.json
+ipp-jobs.sqlite3*
+*.log
+*.log.*
+*.sqlite*
+*.db
+*.pdf
+*.pwg
+*.part
+*.new
+setup.lock
+printer-id.txt
+
+# Development environments and builds
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+runtime-*/
+.zig-cache/
+zig-out/
+build/
+dist/
+*.pdb
+*.obj
+*.o
+*.lib
+*.exp
+*.zip
+
+# Local secrets and editor settings
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

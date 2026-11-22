@@ -1,0 +1,46 @@
+Canon LBP2900 for Windows on ARM
+
+Installation
+On the Windows 11 ARM64 PC, extract the entire ZIP and double-click Install.cmd
+while signed in as the person who will print. Approve the Windows administrator
+prompt when it appears. Setup finishes when it displays "Setup complete."
+
+On a fresh PC, setup downloads native ARM64 Python 3.12 using WinGet. It can
+also install Microsoft's App Installer if WinGet is missing. Internet access is
+needed for those downloads. The ZIP includes the two ARM64 rendering libraries.
+Setup starts the print helper and registers and checks the monochrome printer.
+You can run Install.cmd again after an interrupted installation.
+To update an existing PC, run the new Install.cmd. If the previous helper
+is busy, setup installs the files and activates them at the next sign-in.
+
+Printing
+Turn on the printer, connect its USB cable, and select "Canon LBP2900"
+in an application's Print dialog. The queue defaults to A4. It prints in
+monochrome at 600 dpi. The local helper starts when you sign in.
+The Windows queue shows Offline when the printer is switched off or unplugged.
+It returns to Ready when the printer responds over USB. Documents submitted
+while offline can wait in the Windows queue or the helper until it reconnects.
+
+Windows uses its inbox Microsoft IPP Class Driver. The printer profile
+identifies the manufacturer as Canon, the model as LBP2900, and the color mode
+as monochrome. The Windows test page uses the class driver's name in the
+"Printer Model" field. Windows sends PDF or monochrome PWG Raster to the helper
+on this PC. The helper converts each page to Canon CAPT and sends it over USB.
+Successful documents are removed from the helper's local queue.
+
+Status and interrupted jobs
+Open "Canon LBP2900 Print Status" from Start. Jobs waiting for the USB
+connection are kept until the printer returns. A job interrupted during
+printing is held for review. Retry starts that job from its first page.
+The status window also starts the helper if it has stopped.
+
+Installed files and removal
+The helper, its log, and its pending jobs are under %LOCALAPPDATA%\CanonLBP2900.
+To remove the setup, double-click Uninstall.cmd from the extracted package.
+Confirm removal and approve the administrator prompt when it appears.
+It removes the Windows queue, helper, shortcuts, private runtime, and history.
+Any saved documents and Windows jobs are listed by count before confirmation.
+Python and WinGet have their own uninstall options in Windows settings.
+
+This is a community-based USB printing workaround. The Windows CAPT
+implementation and encoder source are included. See SOURCES.txt and COPYING.

@@ -1,0 +1,38 @@
+Canon LBP2900 Windows ARM64 print bridge
+SPDX-License-Identifier: GPL-3.0-or-later
+
+The USB transport, Windows spool integration and UI are included in app/.
+The CAPT job sequencing in app/capt.py was ported from captdriver.
+Protocol and compressor copyright Alexey Galakhov and contributors.
+Additional protocol contributions include Alexei Gordeev.
+
+Source used for the Hi-SCoA encoder and protocol reference
+https://github.com/suluoniu/captdriver-lbp2900/tree/f7107828725647cf925f9eb0df05c61b6069d49c
+Upstream projects
+https://github.com/agalakhov/captdriver
+https://github.com/mounaiban/captdriver
+
+The standard page dimensions in app/pages.py reference the measurements at
+https://github.com/mounaiban/captdriver/wiki/SPECS:-Page-Parameters-Reference-Output-Sizes
+That wiki is published under CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/
+
+Build the included ARM64 DLL from source, using Zig 0.15.2 as a C compiler.
+Run this command from the extracted package directory.
+
+zig cc -target aarch64-windows-gnu -O2 -shared -s -Icodec codec/codec.c codec/hiscoa-compress.c codec/hiscoa-common.c -o app/hiscoa.dll
+
+The setup/wheels directory contains the original Windows ARM64 wheels for
+Pillow 13.0.0 (CPython 3.12) and pypdfium2 5.14.0 with their license notices.
+setup/requirements.txt records the SHA-256 hashes published on PyPI.
+https://pypi.org/project/Pillow/13.0.0/#files
+https://pypi.org/project/pypdfium2/5.14.0/#files
+
+Setup gets the Python Software Foundation's ARM64 Windows installer from the
+WinGet community source. On PCs missing WinGet, it can register App Installer
+or deploy Microsoft's signed release bundle and required ARM64 frameworks.
+https://github.com/microsoft/winget-pkgs/tree/master/manifests/p/Python/Python/3/12
+https://github.com/microsoft/winget-cli/releases/latest
+
+app/ipp_codec.py is from bogdik/mfp-print-scan-server, revision 23859a71a8838788175120f36e05348488462468,
+copyright 2026 Bogdan Shatik, licensed under MIT. See IPP-codec-LICENSE.txt.
+https://github.com/bogdik/mfp-print-scan-server
